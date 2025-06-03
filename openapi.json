@@ -1,0 +1,403 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Daily GPT API",
+    "version": "v1.0.0",
+    "description": "API for CustomGPT to access various daily services"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/videos": {
+      "get": {
+        "operationId": "GetRecentVideos",
+        "summary": "Get recent YouTube videos",
+        "description": "Returns newly published videos within the last 24 hours.",
+        "parameters": [
+          {
+            "name": "channels",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of channel names or IDs.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of content categories (e.g., tech, news, music).",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of videos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Video"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headlines": {
+      "get": {
+        "operationId": "GetNewsHeadlines",
+        "summary": "Get news headlines",
+        "description": "Returns recent news articles based on user interests.",
+        "parameters": [
+          {
+            "name": "topics",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of topics to filter news (e.g., technology, real estate, economy).",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "description": "How many past hours to look back for news. Default is 24.",
+            "schema": { "type": "integer", "default": 24 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of news articles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewsArticle"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "GetUserJiraTasks",
+        "summary": "Get Jira tasks",
+        "description": "Returns the user's Jira tasks marked as To Do or In Progress.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of tasks to return.",
+            "schema": { "type": "integer", "default": 5 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of Jira tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JiraTask"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/important": {
+      "get": {
+        "operationId": "GetImportantEmails",
+        "summary": "Get important emails",
+        "description": "Retrieve important emails from the last 24 hours.",
+        "parameters": [
+          {
+            "name": "priorityContacts",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated list of priority contact emails.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of emails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Email"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "GetUserCalendarEvents",
+        "summary": "Get calendar events",
+        "description": "Returns calendar events for a specified date range.",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "description": "Start of date range (ISO 8601 format)",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "description": "End of date range (ISO 8601 format)",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of calendar events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEvent"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthCheck",
+        "summary": "API health check",
+        "description": "Returns the health status of the API.",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Video": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "video1"
+          },
+          "title": {
+            "type": "string",
+            "example": "Latest Tech Trends 2023"
+          },
+          "channel": {
+            "type": "string",
+            "example": "TechWorld"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-12-01T15:30:00Z"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://youtube.com/watch?v=abc123"
+          },
+          "thumbnail": {
+            "type": "string",
+            "example": "https://i.ytimg.com/vi/abc123/hqdefault.jpg"
+          },
+          "category": {
+            "type": "string",
+            "example": "tech"
+          }
+        }
+      },
+      "NewsArticle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "news1"
+          },
+          "title": {
+            "type": "string",
+            "example": "New AI Breakthrough Announced"
+          },
+          "source": {
+            "type": "string",
+            "example": "Tech Times"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-12-01T15:30:00Z"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://techtimes.com/ai-breakthrough"
+          },
+          "topic": {
+            "type": "string",
+            "example": "technology"
+          }
+        }
+      },
+      "JiraTask": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "PROJ-123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Implement new user authentication flow"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["To Do", "In Progress"],
+            "example": "In Progress"
+          },
+          "priority": {
+            "type": "string",
+            "example": "High"
+          },
+          "assignee": {
+            "type": "string",
+            "example": "John Smith"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-12-01T15:30:00Z"
+          }
+        }
+      },
+      "Email": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "email1"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Urgent: Project Deadline Update"
+          },
+          "sender": {
+            "type": "string",
+            "example": "boss@company.com"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-12-01T15:30:00Z"
+          },
+          "read": {
+            "type": "boolean",
+            "example": false
+          },
+          "snippet": {
+            "type": "string",
+            "example": "We need to move up the deadline for the project."
+          }
+        }
+      },
+      "CalendarEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "event1"
+          },
+          "title": {
+            "type": "string",
+            "example": "Team Stand-up"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-12-01T10:00:00Z"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-12-01T10:30:00Z"
+          },
+          "location": {
+            "type": "string",
+            "example": "Conference Room A"
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["john@company.com", "mary@company.com"]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Invalid date format. Use ISO 8601 format."
+          }
+        }
+      }
+    }
+  }
+} 
