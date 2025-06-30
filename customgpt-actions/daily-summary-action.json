@@ -1,0 +1,345 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Personal Daily Summary & Calendar API",
+    "description": "Get your complete daily overview with calendar events and important emails, plus create new calendar events. The GET method provides a race-condition-free daily summary, while the POST method allows you to create new calendar events. Shows emails from previous 72 hours and calendar events for next 72 hours by default.",
+    "version": "2.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://services.waterfront-ai.com/api/chatgpt-daily",
+      "description": "Production server with UUID authentication and race-condition-free design"
+    }
+  ],
+  "paths": {
+    "/daily": {
+      "get": {
+        "summary": "Get your complete daily summary",
+        "description": "Retrieve your personal calendar events and important emails in a single, race-condition-free request. By default shows emails from the previous 72 hours and calendar events for the next 72 hours. All parameters are optional with intelligent defaults.",
+        "operationId": "getDailySummary",
+        "parameters": [
+          {
+            "name": "emailHours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 72,
+              "minimum": 1,
+              "maximum": 720
+            },
+            "description": "Optional: Number of hours to look back for emails. Defaults to 72 hours (3 days). Maximum 720 hours (30 days)."
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Optional: Calendar start date in YYYY-MM-DD format. If not provided, defaults to today."
+          },
+          {
+            "name": "endDate", 
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Optional: Calendar end date in YYYY-MM-DD format. If not provided, defaults to 3 days from today."
+          },
+          {
+            "name": "priorityContacts",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional: Comma-separated list of priority email addresses to highlight"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete daily summary with calendar events and emails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "calendar": {
+                      "type": "object",
+                      "properties": {
+                        "events": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "start": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "end": {
+                                "type": "string", 
+                                "format": "date-time"
+                              },
+                              "location": {
+                                "type": "string"
+                              },
+                              "attendees": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "count": {
+                          "type": "integer"
+                        },
+                        "date_range": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "end": {
+                              "type": "string",
+                              "format": "date"
+                            }
+                          }
+                        },
+                        "error": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "emails": {
+                      "type": "object",
+                      "properties": {
+                        "messages": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "subject": {
+                                "type": "string"
+                              },
+                              "sender": {
+                                "type": "string"
+                              },
+                              "receivedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "read": {
+                                "type": "boolean"
+                              },
+                              "snippet": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "count": {
+                          "type": "integer"
+                        },
+                        "hours_back": {
+                          "type": "integer"
+                        },
+                        "priority_contacts": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "error": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total_events": {
+                          "type": "integer"
+                        },
+                        "total_emails": {
+                          "type": "integer"
+                        },
+                        "user": {
+                          "type": "string"
+                        },
+                        "generated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required - please provide your personal UUID in the X-API-Key header"
+          }
+        },
+        "security": [
+          {
+            "PersonalUUID": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a new calendar event",
+        "description": "Create a new event on your personal calendar. If you provide a location, the system will automatically calculate and add travel time events before and after your appointment.",
+        "operationId": "createCalendarEvent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "start_time", "end_time"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Event title/subject",
+                    "example": "Team Meeting"
+                  },
+                  "start_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Event start time in ISO 8601 format",
+                    "example": "2024-01-15T10:00:00Z"
+                  },
+                  "end_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Event end time in ISO 8601 format",
+                    "example": "2024-01-15T11:00:00Z"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Event location (optional - triggers automatic travel time calculation if provided)",
+                    "example": "123 Main St, Miami, FL"
+                  },
+                  "attendee_name": {
+                    "type": "string",
+                    "description": "Name of the attendee",
+                    "example": "John Doe"
+                  },
+                  "attendee_email": {
+                    "type": "string",
+                    "description": "Email of the attendee",
+                    "example": "john@company.com"
+                  },
+                  "attendee_phone": {
+                    "type": "string",
+                    "description": "Phone number of the attendee",
+                    "example": "+1234567890"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Additional notes for the event",
+                    "example": "Quarterly planning session"
+                  },
+                  "attendees": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "description": "Optional array of attendee email addresses to invite to the meeting",
+                    "example": ["john@company.com", "jane@example.com"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Calendar event created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "appointment_id": {
+                          "type": "string",
+                          "description": "ID of the main appointment event"
+                        },
+                        "travel_to_id": {
+                          "type": "string",
+                          "description": "ID of the travel-to event (if location provided)"
+                        },
+                        "travel_from_id": {
+                          "type": "string",
+                          "description": "ID of the travel-from event (if location provided)"
+                        },
+                        "appointment_link": {
+                          "type": "string",
+                          "description": "Web link to view the main appointment"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Calendar event created successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data - missing required fields or invalid date format"
+          },
+          "401": {
+            "description": "Authentication required - please provide your personal UUID in the X-API-Key header"
+          },
+          "500": {
+            "description": "Server error or calendar service unavailable"
+          }
+        },
+        "security": [
+          {
+            "PersonalUUID": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "PersonalUUID": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Your personal UUID from the database. Each user has a unique identifier that provides access only to their own data. This single endpoint eliminates race conditions by returning both calendar and email data in one request."
+      }
+    }
+  }
+} 
